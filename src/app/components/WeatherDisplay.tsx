@@ -18,14 +18,11 @@ export default function WeatherDisplay() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const fetchWeather = async () => {
     try {
       setLoading(true);
-      // API 키는 환경 변수로 관리하는 것이 좋습니다
-      // 여기서는 임시로 사용합니다
-      const API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY || 'YOUR_API_KEY_HERE';
+      // API 키를 직접 URL에 포함
       const response = await fetch(
         `https://api.openweathermap.org/data/2.5/weather?q=Seoul&units=metric&appid=2da4a971112084898f45c560c43651f1`
       );
@@ -47,8 +44,6 @@ export default function WeatherDisplay() {
         temp_max: data.main.temp_max
       });
       
-      const now = new Date();
-      setLastUpdated(now.toLocaleTimeString());
       setError(null);
     } catch (err) {
       setError('날씨 정보를 가져오는데 문제가 발생했습니다');

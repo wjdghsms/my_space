@@ -9,7 +9,8 @@ interface DigitalClockProps {
 
 export default function DigitalClock({ initialFormat = '24h' }: DigitalClockProps) {
   const [time, setTime] = useState<string>('--:--:--');
-  const [format, setFormat] = useState<'12h' | '24h'>(initialFormat);
+  // 형식 전환 기능을 제거하고 고정된 형식만 사용
+  const format = initialFormat;
 
   useEffect(() => {
     const updateTime = () => {
