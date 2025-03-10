@@ -1,101 +1,107 @@
-import Image from "next/image";
+'use client';
+
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import { motion } from 'framer-motion';
+
+// 클라이언트 사이드에서만 렌더링되도록 dynamic import 사용
+const DigitalClock = dynamic(() => import('./components/DigitalClock'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center p-6 bg-gray-800/50 backdrop-blur-md rounded-xl shadow-lg w-full">
+      <div className="text-4xl font-mono font-bold text-white/80">--:--:--</div>
+    </div>
+  )
+});
+
+const WeatherDisplay = dynamic(() => import('./components/WeatherDisplay'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center p-6 bg-gray-800/50 backdrop-blur-md rounded-xl shadow-lg w-full">
+      <h2 className="text-xl font-semibold mb-4 text-white/80">서울 날씨</h2>
+      <p className="text-white/60">날씨 정보를 불러오는 중...</p>
+    </div>
+  )
+});
+
+const TodoList = dynamic(() => import('./components/TodoList'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col p-6 bg-gray-800/50 backdrop-blur-md rounded-xl shadow-lg w-full">
+      <h2 className="text-xl font-semibold mb-4 text-white/80">할 일 목록</h2>
+      <p className="text-white/60">로딩 중...</p>
+    </div>
+  )
+});
+
+// 애니메이션 변수
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { 
+    opacity: 1,
+    transition: { 
+      staggerChildren: 0.2,
+      duration: 0.5
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { 
+    y: 0, 
+    opacity: 1,
+    transition: { 
+      type: "spring", 
+      stiffness: 100,
+      damping: 15
+    }
+  }
+};
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="min-h-screen p-4 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] opacity-10"></div>
+      
+      <motion.div 
+        className="max-w-4xl mx-auto relative z-10"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div 
+          className="grid grid-cols-2 gap-4 mb-4"
+          variants={containerVariants}
+        >
+          <motion.div 
+            className="col-span-1"
+            variants={itemVariants}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            <Suspense fallback={<div>로딩 중...</div>}>
+              <DigitalClock initialFormat="24h" />
+            </Suspense>
+          </motion.div>
+          
+          <motion.div 
+            className="col-span-1"
+            variants={itemVariants}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+            <Suspense fallback={<div>로딩 중...</div>}>
+              <WeatherDisplay />
+            </Suspense>
+          </motion.div>
+        </motion.div>
+        
+        <motion.div 
+          className="w-full"
+          variants={itemVariants}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <Suspense fallback={<div>로딩 중...</div>}>
+            <TodoList />
+          </Suspense>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
