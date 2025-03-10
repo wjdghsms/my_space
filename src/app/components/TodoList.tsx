@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Todo {
@@ -14,30 +14,63 @@ type FilterType = '전체' | '미완료' | '완료';
 export default function TodoList() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTodo, setNewTodo] = useState<string>('');
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [filter, setFilter] = useState<FilterType>('전체');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // 로컬 스토리지에서 할 일 목록 불러오기
-  useEffect(() => {
+  // 서버에서 할 일 목록 불러오기
+  const fetchTodos = useCallback(async () => {
     try {
-      const storedTodos = localStorage.getItem('todos');
-      if (storedTodos) {
-        setTodos(JSON.parse(storedTodos));
+      setIsLoading(true);
+      const response = await fetch('/api/todos');
+      
+      if (!response.ok) {
+        throw new Error('할 일 목록을 불러오는데 실패했습니다');
       }
-    } catch (error) {
-      console.error('Failed to parse todos from localStorage:', error);
+      
+      const data = await response.json();
+      setTodos(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching todos:', err);
+      setError('할 일 목록을 불러오는데 문제가 발생했습니다');
     } finally {
-      setIsInitialized(true);
+      setIsLoading(false);
     }
   }, []);
 
-  // 할 일 목록이 변경될 때마다 로컬 스토리지에 저장
-  useEffect(() => {
-    // 초기화 후에만 localStorage에 저장
-    if (isInitialized) {
-      localStorage.setItem('todos', JSON.stringify(todos));
+  // 서버에 할 일 목록 저장하기
+  const saveTodos = async (updatedTodos: Todo[]) => {
+    try {
+      const response = await fetch('/api/todos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTodos),
+      });
+      
+      if (!response.ok) {
+        throw new Error('할 일 목록을 저장하는데 실패했습니다');
+      }
+      setError(null);
+    } catch (err) {
+      console.error('Error saving todos:', err);
+      setError('할 일 목록을 저장하는데 문제가 발생했습니다');
     }
-  }, [todos, isInitialized]);
+  };
+
+  // 컴포넌트 마운트 시 할 일 목록 불러오기
+  useEffect(() => {
+    fetchTodos();
+  }, [fetchTodos]);
+
+  // 할 일 목록이 변경될 때마다 서버에 저장
+  useEffect(() => {
+    if (!isLoading) {
+      saveTodos(todos);
+    }
+  }, [todos, isLoading]);
 
   // 새 할 일 추가
   const addTodo = (e: React.FormEvent) => {
@@ -67,6 +100,11 @@ export default function TodoList() {
   // 할 일 삭제
   const deleteTodo = (id: string) => {
     setTodos(prevTodos => prevTodos.filter(todo => todo.id !== id));
+  };
+
+  // 할 일 목록 새로고침
+  const refreshTodos = () => {
+    fetchTodos();
   };
 
   // 필터링된 할 일 목록
@@ -116,14 +154,37 @@ export default function TodoList() {
       transition={{ duration: 0.5 }}
       whileHover={{ boxShadow: "0 0 20px rgba(0, 0, 255, 0.3)" }}
     >
-      <motion.h2 
-        className="text-lg font-semibold text-white/80 mb-4"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        할 일 목록
-      </motion.h2>
+      <div className="flex justify-between items-center mb-4">
+        <motion.h2 
+          className="text-lg font-semibold text-white/80"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          할 일 목록
+        </motion.h2>
+        <motion.button
+          onClick={refreshTodos}
+          className="p-2 text-blue-400 hover:text-blue-300 rounded-full"
+          whileHover={{ scale: 1.1, rotate: 180 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ duration: 0.5 }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+          </svg>
+        </motion.button>
+      </div>
+
+      {error && (
+        <motion.div 
+          className="mb-4 p-3 bg-red-500/30 text-red-200 rounded-lg"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          {error}
+        </motion.div>
+      )}
       
       <motion.form 
         onSubmit={addTodo} 
@@ -172,7 +233,7 @@ export default function TodoList() {
         ))}
       </motion.div>
       
-      {!isInitialized ? (
+      {isLoading ? (
         <motion.div 
           className="flex justify-center items-center py-8"
           initial={{ opacity: 0 }}
